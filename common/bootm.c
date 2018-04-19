@@ -164,6 +164,20 @@ static int bootm_find_os(cmd_tbl_t *cmdtp, int flag, int argc,
 		ep_found = true;
 		break;
 #endif
+#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
+	case IMAGE_FORMAT_FUCHSIA:
+		images.os.type = IH_TYPE_KERNEL;
+		images.os.comp =  fuchsia_image_get_comp(os_hdr);
+		images.os.os = IH_OS_FUCHSIA;
+
+		images.os.end = fuchsia_image_get_end(os_hdr);
+		images.os.load = fuchsia_image_get_kload(os_hdr);
+		if (images.os.load == 0x10008000)
+			images.os.load = 0x1080000;
+		images.ep = images.os.load;
+		ep_found = true;
+		break;
+#endif
 	default:
 		puts("ERROR: unknown image format type!\n");
 		return 1;
@@ -875,6 +889,15 @@ static const void *boot_get_kernel(cmd_tbl_t *cmdtp, int flag, int argc,
 		images->fit_uname_os = fit_uname_kernel;
 		images->fit_uname_cfg = fit_uname_config;
 		images->fit_noffset_os = os_noffset;
+		break;
+#endif
+#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
+	case IMAGE_FORMAT_FUCHSIA:
+		printf("## Booting Fuchsia Image at 0x%08lx ...\n", img_addr);
+		buf = map_sysmem(img_addr, 0);
+		if (fuchsia_image_get_kernel(buf, images->verify,
+					     os_data, os_len))
+			return NULL;
 		break;
 #endif
 #ifdef CONFIG_ANDROID_BOOT_IMAGE

@@ -30,6 +30,19 @@
 #include <asm/armv7.h>
 #endif
 
+#if defined(CONFIG_FUCHSIA_BOOT_IMAGE)
+#include <fuchsia/bootdata.h>
+#include <fuchsia/driver-config.h>
+
+static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
+							const void* payload, uint32_t length);
+
+#if defined(CONFIG_IMX8MEVK)
+#include <fuchsia/board/imx8mevk/board-config.h>
+#endif
+
+#endif
+
 DECLARE_GLOBAL_DATA_PTR;
 
 static struct tag *params;
@@ -431,5 +444,63 @@ void boot_jump_vxworks(bootm_headers_t *images)
 {
 	/* ARM VxWorks requires device tree physical address to be passed */
 	((void (*)(void *))images->ep)(images->ft_addr);
+}
+#endif
+
+
+#if defined(CONFIG_FUCHSIA_BOOT_IMAGE)
+
+#define FUCHSIA_KERNEL_ALIGN	65536
+
+static void append_bootdata(bootdata_t* container, uint32_t type, uint32_t extra,
+							const void* payload, uint32_t length) {
+	bootdata_t* dest = (bootdata_t*)((uintptr_t)container + container->length + sizeof(bootdata_t));
+
+	dest->type = type;
+	dest->length = length;
+	dest->extra = extra;
+	dest->flags = 0;
+	dest->reserved0 = 0;
+	dest->reserved1 = 0;
+	dest->magic = BOOTITEM_MAGIC;
+	dest->crc32 = BOOTITEM_NO_CRC32;
+
+	if (length) {
+		memcpy(dest + 1, payload, length);
+	}
+	length = BOOTDATA_ALIGN(length + sizeof(bootdata_t));
+	container->length += length;
+}
+
+int do_bootm_fuchsia(int flag, int argc, char * const argv[],
+		   bootm_headers_t *images)
+{
+	bootdata_t* bootdata = (bootdata_t *)images->ep;
+	const bootdata_t* kernel_hdr = &bootdata[1];
+	const bootdata_kernel_t* kernel = (bootdata_kernel_t *)&bootdata[2];
+
+	append_board_bootdata(bootdata);
+
+	uint32_t bootdata_len = bootdata->length + sizeof(bootdata_t);
+	uint32_t kernel_len = kernel_hdr->length + 2 * sizeof(bootdata_t);
+
+	// If bootdata_len is greater than kernel_len,
+	// then we have bootdata records after the kernel.
+	// In that case we must relocate the kernel after the bootdata
+	if (bootdata_len > kernel_len) {
+		uintptr_t dest = (ulong)bootdata + bootdata_len;
+		// align to 64K boundary
+		dest = (dest + FUCHSIA_KERNEL_ALIGN - 1) & ~(FUCHSIA_KERNEL_ALIGN - 1);
+		memcpy((void *)dest, bootdata, kernel_len);
+		images->ep = dest + kernel->entry64;
+	} else {
+		images->ep = (ulong)bootdata + kernel->entry64;
+	}
+
+	// this will pass the bootdata pointer to the kernel via x0
+	images->ft_addr = (char *)bootdata;
+
+	boot_jump_linux(images, flag);
+	return 0;
 }
 #endif

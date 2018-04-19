@@ -149,6 +149,7 @@ endif
 obj-$(CONFIG_CMD_IDE) += ide.o
 obj-y += image.o
 obj-$(CONFIG_ANDROID_BOOT_IMAGE) += image-android.o
+obj-$(CONFIG_FUCHSIA_BOOT_IMAGE) += image-fuchsia.o
 obj-$(CONFIG_$(SPL_)OF_LIBFDT) += image-fdt.o
 obj-$(CONFIG_$(SPL_)FIT) += image-fit.o
 obj-$(CONFIG_$(SPL_)FIT_SIGNATURE) += image-sig.o

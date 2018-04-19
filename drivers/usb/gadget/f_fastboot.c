@@ -23,6 +23,9 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/composite.h>
 #include <linux/compiler.h>
+#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
+#include <fuchsia/bootdata.h>
+#endif
 #include <version.h>
 #include <g_dnl.h>
 #ifdef CONFIG_FASTBOOT_FLASH_MMC_DEV
@@ -1585,7 +1588,25 @@ int do_boota(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]) {
 		hdr = (struct andr_img_hdr *)avb_loadpart->data;
 		if (android_image_check_header(hdr)) {
 			printf("boota: bad boot image magic\n");
+#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
+			if (fuchsia_image_check_header(hdr) == 0) {
+				printf("Found Fuchsia Image!!!!!\n");
+				const bootdata_t* bootdata = (bootdata_t*) hdr;
+				printf("Load bootdata at 0x%lx\n",fuchsia_image_get_kload(hdr));
+				memcpy((void *)(ulong)(fuchsia_image_get_kload(hdr)),
+					(void *)hdr,
+					sizeof(*bootdata) + ALIGN(bootdata->length, hdr->page_size));
+				char fboot_addr_start[12];
+				char *boot_args[] = { NULL,fboot_addr_start, NULL, NULL};
+				boot_args[0] = "bootm";
+				sprintf(fboot_addr_start, "0x%lx", fuchsia_image_get_kload(hdr));
+				do_bootm(NULL, 0, 2, boot_args);
+				/* This only happens if image is somehow faulty so we start over */
+				do_reset(NULL, 0, 0, NULL);
+			}
+#else
 			goto fail;
+#endif
 		}
 		if (avb_result == AVB_AB_FLOW_RESULT_OK)
 			printf(" verify OK, boot '%s%s'\n",

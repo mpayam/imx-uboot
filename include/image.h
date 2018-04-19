@@ -160,6 +160,7 @@ enum {
 	IH_OS_OSE,			/* OSE		*/
 	IH_OS_PLAN9,			/* Plan 9	*/
 	IH_OS_OPENRTOS,		/* OpenRTOS	*/
+	IH_OS_FUCHSIA,		/* Fuchsia	*/
 
 	IH_OS_COUNT,
 };
@@ -558,6 +559,7 @@ int boot_get_setup(bootm_headers_t *images, uint8_t arch, ulong *setup_start,
 #endif
 #define IMAGE_FORMAT_FIT	0x02	/* new, libfdt based format */
 #define IMAGE_FORMAT_ANDROID	0x03	/* Android boot image */
+#define IMAGE_FORMAT_FUCHSIA	0x04	/* Fuchsia boot image */
 
 ulong genimg_get_kernel_addr_fit(char * const img_addr,
 			         const char **fit_uname_config,
@@ -1328,5 +1330,15 @@ struct fit_loadable_tbl {
 		.type = _type, \
 		.handler = _handler, \
 	}
+
+#if defined(CONFIG_FUCHSIA_BOOT_IMAGE)
+struct andr_img_hdr;
+int fuchsia_image_check_header(const void *hdr);
+int fuchsia_image_get_kernel(const void* hdr, int verify,
+			     ulong *os_data, ulong *os_len);
+ulong fuchsia_image_get_end(const void *hdr);
+ulong fuchsia_image_get_kload(const void *hdr);
+ulong fuchsia_image_get_comp(const void *hdr);
+#endif /* CONFIG_FUCHSIA_BOOT_IMAGE */
 
 #endif	/* __IMAGE_H__ */

@@ -880,11 +880,14 @@ int genimg_get_format(const void *img_addr)
 	if (fdt_check_header(img_addr) == 0)
 		return IMAGE_FORMAT_FIT;
 #endif
+#ifdef CONFIG_FUCHSIA_BOOT_IMAGE
+	if (fuchsia_image_check_header(img_addr) == 0)
+		return IMAGE_FORMAT_FUCHSIA;
+#endif
 #ifdef CONFIG_ANDROID_BOOT_IMAGE
 	if (android_image_check_header(img_addr) == 0)
 		return IMAGE_FORMAT_ANDROID;
 #endif
-
 	return IMAGE_FORMAT_INVALID;
 }
 

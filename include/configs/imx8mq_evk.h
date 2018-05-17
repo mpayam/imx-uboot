@@ -211,7 +211,7 @@
 
 /* Monitor Command Prompt */
 #undef CONFIG_SYS_PROMPT
-#define CONFIG_SYS_PROMPT		"u-boot=> "
+#define CONFIG_SYS_PROMPT		"zircon-u-boot=> "
 #define CONFIG_SYS_LONGHELP
 #define CONFIG_SYS_PROMPT_HUSH_PS2     "> "
 #define CONFIG_AUTO_COMPLETE

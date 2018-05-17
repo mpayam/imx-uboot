@@ -1654,6 +1654,8 @@ int do_boota(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]) {
 			printf("please enable CONFIG_LZ4 if we're using compressed lz4 kernel image!\n");
 			goto fail;
 #endif /* CONFIG_LZ4 */
+			memcpy((void *)(ulong)(hdr->kernel_addr - hdr->page_size), (void *)hdr,
+					hdr->page_size);
 		}
 #else /* CONFIG_ARCH_IMX8 || CONFIG_ARCH_IMX8M */
 		/* copy kernel image and boot header to hdr->kernel_addr - hdr->page_size */
